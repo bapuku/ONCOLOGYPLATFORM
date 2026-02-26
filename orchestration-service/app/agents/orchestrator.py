@@ -55,7 +55,16 @@ Decompose this goal into specific tasks. Return JSON with workflow_id, goal, tas
             model_id=self.BACKBONE_MODEL,
             response_format="json",
         )
-        return OrchestrationPlan.model_validate_json(response.content)
+        try:
+            return OrchestrationPlan.model_validate_json(response.content)
+        except Exception:
+            import uuid
+            return OrchestrationPlan(
+                workflow_id=str(uuid.uuid4())[:8],
+                goal=goal,
+                tasks=[],
+                estimated_duration_seconds=0,
+            )
 
     async def execute_workflow(
         self,
@@ -91,17 +100,32 @@ Decompose this goal into specific tasks. Return JSON with workflow_id, goal, tas
         plan: OrchestrationPlan,
         results: Dict[str, AgentResponse],
     ) -> AgentResponse:
+        if not results:
+            return AgentResponse(
+                agent_id=self.AGENT_ID,
+                situation_summary=f"Processed goal: {plan.goal}. Configure LLM API keys for full multi-agent orchestration.",
+                confidence=0.0,
+                human_oversight_required=True,
+            )
         text = "\n".join(
             f"=== {r.agent_id} (Task: {tid}) ===\nSummary: {r.situation_summary}\nEvidence: {r.supporting_evidence}\nConfidence: {r.confidence}\nHuman Oversight: {r.human_oversight_required}"
             for tid, r in results.items()
         )
-        prompt = f"Synthesize into cohesive care plan. GOAL: {plan.goal}\nAGENT RESULTS:\n{text}\nReturn JSON: situation_summary, supporting_evidence, json_metrics, vocal_summary, human_oversight_required."
+        prompt = f"Synthesize into cohesive care plan. GOAL: {plan.goal}\nAGENT RESULTS:\n{text}\nReturn JSON with: agent_id, situation_summary, supporting_evidence, json_metrics, vocal_summary, human_oversight_required, confidence."
         response = await self.llm_router.generate(
             prompt=prompt,
             model_id=self.BACKBONE_MODEL,
             response_format="json",
         )
-        return AgentResponse.model_validate_json(response.content)
+        try:
+            return AgentResponse.model_validate_json(response.content)
+        except Exception:
+            return AgentResponse(
+                agent_id=self.AGENT_ID,
+                situation_summary=response.content[:500],
+                confidence=0.0,
+                human_oversight_required=True,
+            )
 
     async def execute(
         self,
