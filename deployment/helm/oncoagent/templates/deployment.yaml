@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Chart.Name }}-orchestration
+  labels:
+    app: {{ .Chart.Name }}
+    component: orchestration
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Chart.Name }}
+      component: orchestration
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}
+        component: orchestration
+    spec:
+      containers:
+        - name: orchestration
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          envFrom:
+            - secretRef:
+                name: {{ .Chart.Name }}-secrets
+          env:
+            - name: NEO4J_URI
+              value: "{{ .Values.env.NEO4J_URI }}"
+            - name: WEAVIATE_URL
+              value: "{{ .Values.env.WEAVIATE_URL }}"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.service.port }}
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.service.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2"
+              memory: "4Gi"

@@ -1,0 +1,40 @@
+# OncoAgent Platform CI - lint, test, build per spec §8
+name: CI
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install backend deps
+        run: |
+          cd orchestration-service
+          python -m venv .venv
+          .venv/bin/pip install -r requirements.txt
+      - name: Run backend tests
+        run: |
+          cd orchestration-service && .venv/bin/python -m pytest tests/ -v
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: oncoagent-frontend/package-lock.json
+      - name: Install frontend deps
+        run: cd oncoagent-frontend && npm ci
+      - name: Lint
+        run: cd oncoagent-frontend && npm run lint
+      - name: Test
+        run: cd oncoagent-frontend && npm run test
+      - name: Build
+        run: cd oncoagent-frontend && npm run build

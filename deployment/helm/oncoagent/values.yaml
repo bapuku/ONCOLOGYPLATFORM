@@ -1,0 +1,28 @@
+# OncoAgent Helm values - per spec §8 deployment
+replicaCount: 1
+
+image:
+  repository: oncoagent/orchestration-service
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+
+service:
+  port: 8000
+
+env:
+  NEO4J_URI: "bolt://neo4j:7687"
+  NEO4J_PASSWORD: "changeme"
+  WEAVIATE_URL: "http://weaviate:8080"
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+  ALLOWED_ORIGINS: "http://localhost:3000"
+
+# GPU node pool for AI inference per spec
+gpu:
+  enabled: false
+  nodeSelector:
+    gpu: "true"
+
+# Monitoring per spec §8
+monitoring:
+  enabled: true
+  serviceMonitor: true

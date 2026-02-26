@@ -1,0 +1,8 @@
+# Prometheus scrape config - stub per spec §8 monitoring
+# Scrape orchestration-service metrics
+scrape_configs:
+  - job_name: oncoagent
+    static_configs:
+      - targets: ["orchestration-service:8000"]
+    metrics_path: /metrics
+# Add ai_inference_latency_seconds, agent_task_completion_rate when exposed
